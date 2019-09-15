@@ -25,6 +25,6 @@ def index():
     #     context.set_zoom(zoom)
     for coords in marker:
         context.add_object(Marker(parse_latlng(coords)))
-    image = context.render(200, 200)
+    image = context.render(264, 264)
 
     return '<h1>Hello World! Your browser is {}</h1>'.format(user_agent)

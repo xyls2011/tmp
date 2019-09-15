@@ -3,6 +3,7 @@ import s2sphere as s2
 from transformer import Transformer
 from tile_provider import tile_provider_OSM
 import requests
+import PIL.Image as Image
 
 
 class Context:
@@ -46,6 +47,10 @@ class Context:
 
         # render tiles
         tiles = 2**zoom
+        img_x_count = trans.tiles_x()
+        img_y_count = trans.tiles_y()
+        img_tile_size = self._tile_provider.tile_size()
+        print('img_x_count, img_y_count, img_tile_size ', img_x_count, img_y_count, img_tile_size)
         for yy in range(0, trans.tiles_y()):
             y = trans.first_tile_y() + yy
             if y < 0 or y >= tiles:
@@ -56,6 +61,10 @@ class Context:
                     tile_img = self.fetch_tile_image(zoom, x, y)
                     if tile_img is None:
                         continue
+                    # from_image = tile_img.resize((img_tile_size, img_tile_size), Image.ANTIALIAS)
+                    to_image = Image.new('RGB', (img_y_count * img_tile_size, img_x_count * img_tile_size))
+                    to_image.paste(tile_img, ((x - 1) * img_tile_size, (y - 1) * img_tile_size))
+                    to_image.save('final.jpg')
                     # cairo_context.save()
                     # cairo_context.translate(xx * self._tile_provider.tile_size()
                     #                         + trans.tile_offset_x(),
@@ -132,6 +141,7 @@ class Context:
         maxX = (b.lng_hi().degrees + 180.0) / 360.0
         minY = (1.0 - math.log(math.tan(b.lat_lo().radians) + (1.0 / math.cos(b.lat_lo().radians))) / math.pi) / 2.0
         maxY = (1.0 - math.log(math.tan(b.lat_hi().radians) + (1.0 / math.cos(b.lat_hi().radians))) / math.pi) / 2.0
+        print('in context determine zoom w h minX maxX minY maxY', w, h, minX, maxX, minY, maxY)
         dx = maxX - minX
         if dx < 0:
             dx += math.ceil(math.fabs(dx))
@@ -141,7 +151,9 @@ class Context:
         for zoom in range(1, self._tile_provider.max_zoom()):
             tiles = 2**zoom
             if (dx * tiles > w) or (dy * tiles > h):
+                print('111 b.get_center(), zoom - 1 ', b.get_center(), zoom - 1)
                 return b.get_center(), zoom - 1
+        print('222 b.get_center(), zoom - 1 ', b.get_center(), zoom - 1)
         return b.get_center(), self._tile_provider.max_zoom()
 
     def clamp_zoom(self, zoom):
